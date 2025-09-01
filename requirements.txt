@@ -1,7 +1,7 @@
 # PyTorch - CPU-only version
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.2+cpu
-torchvision==0.16.2+cpu
+torch==2.8.0+cpu
+torchvision==0.17.0+cpu
 
 # Flask and Web Server
 Flask==3.0.0
