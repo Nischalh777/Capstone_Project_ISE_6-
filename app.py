@@ -213,7 +213,32 @@ def delete_detection(detection_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': 'An internal server error occurred.'}), 500
 
+# In app.py
+
+# ... (after all your other routes like /delete, /get_info, etc.) ...
+
+
+# <<< --- NEW SETUP ROUTE --- >>>
+@app.route('/setup')
+def setup_database():
+    """
+    This is a one-time setup route. Visiting this URL will create the database tables.
+    """
+    try:
+        print("--- SETUP ROUTE CALLED ---")
+        # Use the app context to ensure the database is handled correctly
+        with app.app_context():
+            print("Creating database tables...")
+            db.create_all()
+            print("✅ Database tables should be created now.")
+        # Provide feedback to the user in the browser
+        return "Database setup complete! The 'detection' table has been created. You can now use the app.", 200
+    except Exception as e:
+        print(f"🔴 ERROR during setup route: {e}")
+        return f"An error occurred during database setup: {e}", 500
+
+
+# --- Main Execution ---
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    # We can remove db.create_all() from here now, as the setup route handles it.
     app.run(debug=True, host='0.0.0.0')
