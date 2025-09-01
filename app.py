@@ -146,6 +146,41 @@ def process_and_save_prediction(image_bytes, original_filename="captured.png"):
     db.session.commit()
     return predicted_class, confidence, image_url_for_db
 
+# In app.py
+
+# ... (after the @app.route('/dashboard') function) ...
+
+@app.route('/delete/<int:detection_id>', methods=['POST'])
+def delete_detection(detection_id):
+    """
+    Deletes a specific detection record from the database.
+    """
+    try:
+        # Find the detection by its ID
+        detection_to_delete = Detection.query.get(detection_id)
+        
+        if detection_to_delete:
+            # If found, delete the associated image file from the server
+            if os.path.exists(detection_to_delete.image_url):
+                 os.remove(detection_to_delete.image_url)
+
+            # Then, delete the record from the database
+            db.session.delete(detection_to_delete)
+            db.session.commit()
+            
+            # Return a success message
+            return jsonify({'success': True, 'message': 'Detection deleted successfully.'})
+        else:
+            # If no detection with that ID was found
+            return jsonify({'success': False, 'message': 'Detection not found.'}), 404
+            
+    except Exception as e:
+        print(f"🔴 ERROR in /delete route: {e}")
+        db.session.rollback() # Rollback the session in case of an error
+        return jsonify({'success': False, 'message': 'An internal server error occurred.'}), 500
+
+# ... (the rest of your routes like /predict, /capture, etc.)
+
 @app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files: return jsonify({'error': 'No file part'}), 400
