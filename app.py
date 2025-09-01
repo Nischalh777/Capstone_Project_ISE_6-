@@ -17,11 +17,16 @@ from PIL import Image
 # --- App Initialization and Configuration ---
 load_dotenv()
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_default_secret_key")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_very_secret_default_key")
+
+# --- Production-Ready Folder Configuration ---
 UPLOAD_FOLDER = 'static/uploads'
+# Render's persistent disk is at /var/data. We default to a local folder.
+DATABASE_HOME = os.getenv("DATABASE_URL", ".") 
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///detections.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(DATABASE_HOME, "detections.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -94,7 +99,7 @@ def predict_disease(image_bytes):
 def get_chatbot_response(predicted_class):
     if 'healthy' in predicted_class.lower():
         crop_name = predicted_class.split('___')[0].replace('_', ' ')
-        response_text = f"The {crop_name} leaf appears to be healthy. No specific disease management is required. Continue good practices like proper watering, fertilization, and monitoring."
+        response_text = f"The {crop_name} leaf appears to be healthy..."
         return True, response_text
     if not gemini_model:
         return False, "Chatbot is not available due to a server configuration issue."
@@ -124,65 +129,29 @@ def get_chatbot_response(predicted_class):
 
 def process_and_save_prediction(image_bytes, original_filename="captured.png"):
     predicted_class, confidence = predict_disease(image_bytes)
-    if predicted_class is None: return None, None, None
+    if predicted_class is None:
+        return None, None, None
     filename = f"{uuid.uuid4()}_{original_filename.replace(' ', '_')}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    with open(filepath, 'wb') as f: f.write(image_bytes)
+    with open(filepath, 'wb') as f:
+        f.write(image_bytes)
     image_url = url_for('static', filename=f'uploads/{filename}')
     with app.app_context():
-        db.session.add(Detection(image_url=image_url, predicted_class=predicted_class, confidence=confidence))
+        new_detection = Detection(image_url=image_url, predicted_class=predicted_class, confidence=confidence)
+        db.session.add(new_detection)
         db.session.commit()
     return predicted_class, confidence, image_url
 
 # --- Main Routes ---
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    return render_template('index.html')
 
 @app.route('/dashboard')
 def dashboard():
     detections = Detection.query.order_by(Detection.timestamp.desc()).all()
     return render_template('dashboard.html', detections=detections)
-# In app.py
 
-# ... (after the @app.route('/dashboard') function) ...
-
-@app.route('/delete/<int:detection_id>', methods=['POST'])
-def delete_detection(detection_id):
-    """
-    Deletes a specific detection record from the database and its associated image file.
-    """
-    try:
-        # Use .first_or_404() which is a handy shortcut.
-        # It will automatically return a 404 error if no record with that ID is found.
-        detection_to_delete = db.session.get(Detection, detection_id)
-        
-        if detection_to_delete:
-            # If the record exists, get the file path BEFORE deleting the record
-            # We need to reconstruct the full file system path from the URL
-            # This assumes your image_url is stored like '/static/uploads/...'
-            image_filename = os.path.basename(detection_to_delete.image_url)
-            image_filepath = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-
-            # Delete the record from the database first
-            db.session.delete(detection_to_delete)
-            db.session.commit()
-            
-            # If the database deletion was successful, delete the image file
-            if os.path.exists(image_filepath):
-                os.remove(image_filepath)
-                print(f"Deleted image file: {image_filepath}")
-            
-            return jsonify({'success': True, 'message': 'Detection deleted successfully.'})
-        else:
-            # This part is redundant if using first_or_404, but good for clarity
-            return jsonify({'success': False, 'message': 'Detection not found.'}), 404
-            
-    except Exception as e:
-        print(f"🔴 ERROR in /delete route: {e}")
-        db.session.rollback() # Rollback the database session in case of an error
-        return jsonify({'success': False, 'message': 'An internal server error occurred.'}), 500
-
-# ... (the rest of your routes like /predict, /capture, etc.)
 @app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files: return jsonify({'error': 'No file part'}), 400
@@ -191,7 +160,8 @@ def predict():
     try:
         image_bytes = file.read()
         predicted_class, confidence, image_url = process_and_save_prediction(image_bytes, file.filename)
-        if predicted_class is None: return jsonify({'error': 'Model prediction failed.'}), 500
+        if predicted_class is None:
+            return jsonify({'error': 'Model prediction failed.'}), 500
         return jsonify({'prediction': predicted_class, 'confidence': f"{confidence:.2f}", 'image_url': image_url})
     except Exception as e:
         print(f"🔴 ERROR in /predict route: {e}")
@@ -205,7 +175,8 @@ def capture():
         header, encoded = data['image'].split(",", 1)
         image_bytes = base64.b64decode(encoded)
         predicted_class, confidence, image_url = process_and_save_prediction(image_bytes)
-        if predicted_class is None: return jsonify({'error': 'Model prediction failed.'}), 500
+        if predicted_class is None:
+            return jsonify({'error': 'Model prediction failed.'}), 500
         return jsonify({'prediction': predicted_class, 'confidence': f"{confidence:.2f}", 'image_url': image_url})
     except Exception as e:
         print(f"🔴 ERROR in /capture route: {e}")
@@ -222,6 +193,25 @@ def get_info():
     except Exception as e:
         print(f"🔴 ERROR in /get_info route: {e}")
         return jsonify({'chatbot_response': "Server error.", 'gemini_success': False}), 500
+
+@app.route('/delete/<int:detection_id>', methods=['POST'])
+def delete_detection(detection_id):
+    try:
+        detection_to_delete = db.session.get(Detection, detection_id)
+        if detection_to_delete:
+            image_filename = os.path.basename(detection_to_delete.image_url)
+            image_filepath = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+            db.session.delete(detection_to_delete)
+            db.session.commit()
+            if os.path.exists(image_filepath):
+                os.remove(image_filepath)
+            return jsonify({'success': True, 'message': 'Detection deleted.'})
+        else:
+            return jsonify({'success': False, 'message': 'Detection not found.'}), 404
+    except Exception as e:
+        print(f"🔴 ERROR in /delete route: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'An internal server error occurred.'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
