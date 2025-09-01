@@ -1,0 +1,30 @@
+# Flask and Web Server
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.25
+Werkzeug==3.0.1
+Jinja2==3.1.3
+itsdangerous==2.1.2
+click==8.1.7
+
+# Machine Learning - PyTorch
+torch==2.1.2
+torchvision==0.16.2
+numpy==1.26.2
+
+# Image Handling
+Pillow==10.1.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Google Gemini API
+google-generativeai==0.4.1
+google-api-python-client==2.110.0
+google-auth==2.23.4
+google-auth-httplib2==0.1.1
+
+# Other Dependencies
+requests==2.31.0
+tqdm==4.66.1
+protobuf==4.25.1

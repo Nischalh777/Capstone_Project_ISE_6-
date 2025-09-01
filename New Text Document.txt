@@ -1,0 +1,224 @@
+# train_model.py
+
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision.transforms as transforms
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader, random_split
+from torchvision.models import resnet50, ResNet50_Weights
+from sklearn.metrics import classification_report
+import os
+import time
+
+# --- Configuration ---
+TRAIN_ROOT = "datasets/train"
+TEST_ROOT = "datasets/test"
+MODEL_SAVE_PATH = "models/plant_disease_model.pth"
+
+# Hyperparameters
+BATCH_SIZE = 64
+NUM_EPOCHS = 10
+LEARNING_RATE = 0.001
+IMAGE_SIZE = (224, 224)
+RANDOM_SEED = 42 # for reproducibility
+
+# --- Main Execution Block ---
+def main():
+    """
+    Main function to orchestrate the data loading, model training, and evaluation.
+    """
+    # Set seed for reproducibility
+    torch.manual_seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
+    # --- Device Configuration ---
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
+    # --- Directory Validation ---
+    if not os.path.exists(TRAIN_ROOT) or not os.path.exists(TEST_ROOT):
+        print("Error: Dataset directories not found.")
+        print(f"Please ensure '{TRAIN_ROOT}' and '{TEST_ROOT}' exist.")
+        return
+
+    # --- Data Augmentation and Preprocessing ---
+    train_transform = transforms.Compose([
+        transforms.Resize(IMAGE_SIZE),
+        transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.8, 1.0)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    test_transform = transforms.Compose([
+        transforms.Resize(IMAGE_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    # --- Dataset Loading and Splitting ---
+    full_train_dataset = ImageFolder(TRAIN_ROOT, transform=train_transform)
+    test_dataset = ImageFolder(TEST_ROOT, transform=test_transform)
+
+    CLASS_NAMES = full_train_dataset.classes
+    NUM_CLASSES = len(CLASS_NAMES)
+    print(f"Detected classes: {CLASS_NAMES}")
+
+    train_size = int(0.8 * len(full_train_dataset))
+    val_size = len(full_train_dataset) - train_size
+    generator = torch.Generator().manual_seed(RANDOM_SEED)
+    train_set, val_set = random_split(full_train_dataset, [train_size, val_size], generator=generator)
+
+    print(f"Training set size: {len(train_set)}")
+    print(f"Validation set size: {len(val_set)}")
+    print(f"Test set size: {len(test_dataset)}")
+
+    # --- DataLoader Setup ---
+    # Note: Set num_workers=0 on Windows if you encounter multiprocessing errors.
+    num_workers = os.cpu_count() // 2 if device.type == 'cuda' else 0
+    
+    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=num_workers, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=num_workers, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=num_workers, pin_memory=True)
+
+    # --- Model Definition ---
+    model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+    
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    model.fc = nn.Linear(in_features=2048, out_features=NUM_CLASSES)
+    model = model.to(device)
+
+    # --- Loss Function and Optimizer ---
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.fc.parameters(), lr=LEARNING_RATE)
+    
+    # --- Training and Validation ---
+    history = {
+        'train_loss': [], 'val_loss': [],
+        'train_acc': [], 'val_acc': []
+    }
+
+    print("\n--- Starting Training ---")
+    start_time = time.time()
+
+    for epoch in range(NUM_EPOCHS):
+        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        val_loss, val_acc, _, _ = evaluate_model(model, val_loader, criterion, device)
+
+        history['train_loss'].append(train_loss)
+        history['train_acc'].append(train_acc)
+        history['val_loss'].append(val_loss)
+        history['val_acc'].append(val_acc)
+
+        print(f'Epoch {epoch + 1}/{NUM_EPOCHS} | '
+              f'Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% | '
+              f'Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%')
+
+    end_time = time.time()
+    print(f"\n--- Training Complete in {end_time - start_time:.2f} seconds ---")
+
+    # --- Plotting Metrics ---
+    plot_metrics(history)
+
+    # --- Final Evaluation on Test Set ---
+    print("\n--- Starting Final Testing ---")
+    test_loss, test_acc, test_targets, test_predictions = evaluate_model(model, test_loader, criterion, device)
+    print(f'Test Accuracy: {test_acc:.2f}% | Test Loss: {test_loss:.4f}')
+    
+    print("\n--- Classification Report - Test Data ---")
+    print(classification_report(test_targets, test_predictions, target_names=CLASS_NAMES))
+
+    # --- Save the Trained Model ---
+    save_model(model, MODEL_SAVE_PATH)
+
+def train_one_epoch(model, loader, criterion, optimizer, device):
+    model.train()
+    total_loss = 0.0
+    total_correct = 0
+    total_samples = 0
+
+    for data, targets in loader:
+        data, targets = data.to(device), targets.to(device)
+        
+        scores = model(data)
+        loss = criterion(scores, targets)
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        total_loss += loss.item() * data.size(0)
+        _, predictions = scores.max(1)
+        total_correct += (predictions == targets).sum().item()
+        total_samples += data.size(0)
+
+    avg_loss = total_loss / total_samples
+    avg_acc = (total_correct / total_samples) * 100
+    return avg_loss, avg_acc
+
+def evaluate_model(model, loader, criterion, device):
+    model.eval()
+    total_loss = 0.0
+    total_correct = 0
+    total_samples = 0
+    all_predictions = []
+    all_targets = []
+
+    with torch.no_grad():
+        for data, targets in loader:
+            data, targets = data.to(device), targets.to(device)
+            
+            scores = model(data)
+            loss = criterion(scores, targets)
+            
+            total_loss += loss.item() * data.size(0)
+            _, predictions = scores.max(1)
+            total_correct += (predictions == targets).sum().item()
+            total_samples += data.size(0)
+            
+            all_predictions.extend(predictions.cpu().numpy())
+            all_targets.extend(targets.cpu().numpy())
+            
+    avg_loss = total_loss / total_samples
+    avg_acc = (total_correct / total_samples) * 100
+    return avg_loss, avg_acc, all_targets, all_predictions
+
+def plot_metrics(history):
+    epochs = range(1, len(history['train_loss']) + 1)
+    
+    plt.figure(figsize=(14, 6))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, history['train_loss'], 'bo-', label='Training Loss')
+    plt.plot(epochs, history['val_loss'], 'ro-', label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, history['train_acc'], 'bo-', label='Training Accuracy')
+    plt.plot(epochs, history['val_acc'], 'ro-', label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy (%)')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.show()
+
+def save_model(model, path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    torch.save(model.state_dict(), path)
+    print(f"\nModel saved successfully to {path}")
+
+# This guard is essential for multiprocessing on Windows
+if __name__ == '__main__':
+    main()
