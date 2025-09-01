@@ -48,6 +48,16 @@ The application follows a simple yet powerful flow:
 -   **Frontend:** HTML5, CSS3, JavaScript
 -   **Deployment:** Development server (can be deployed with Gunicorn/Nginx)
 
+## Dataset
+
+This project utilizes the **PlantVillage Dataset**, a large, open-source collection of plant leaf images. The model was trained on the "color" image set, which contains over 54,000 images across 38 distinct classes.
+
+-   **Dataset Name:** PlantVillage Dataset
+-   **Source:** Kaggle
+-   **Direct Link:** [https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset](https://www.kaggle.com/datasets/abdallahalidev/plantvillage-dataset)
+
+The dataset is not included in this repository due to its large size. Please follow the setup instructions to generate the model by running the provided Google Colab notebook, which automates the download and training process.
+
 ## Setup and Installation Guide
 
 Follow these steps to run the project on your local machine.
