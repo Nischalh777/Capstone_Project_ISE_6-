@@ -1,3 +1,8 @@
+# PyTorch - Specify the index URL for CPU-only version on Render
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.2+cpu
+torchvision==0.16.2+cpu
+
 # Flask and Web Server
 Flask==3.0.0
 gunicorn==21.2.0
@@ -6,20 +11,10 @@ SQLAlchemy==2.0.25
 Werkzeug==3.0.1
 Jinja2==3.1.3
 
-# Machine Learning - PyTorch
-torch==2.1.2
-torchvision==0.16.2
+# (The rest of the file remains the same)
 numpy==1.26.2
-
-# Image Handling
 Pillow==10.1.0
-
-# Environment Variables
 python-dotenv==1.0.0
-
-# Google Gemini API
 google-generativeai==0.4.1
-
-# Other Dependencies
 requests==2.31.0
 tqdm==4.66.1
