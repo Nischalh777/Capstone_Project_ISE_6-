@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection History - Crop Detector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1>📜 Detection History Dashboard</h1>
+            <p><a href="{{ url_for('index') }}" class="nav-link">← Back to Detector</a></p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card dashboard-card">
+            <div class="dashboard-header">
+                <h2>Your Past Detections</h2>
+                <div class="filter-container">
+                    <input type="text" id="filter-input" placeholder="Filter by crop or disease...">
+                </div>
+            </div>
+
+            {% if detections %}
+                <div class="history-grid" id="history-grid">
+                    {% for detection in detections %}
+                    {# This Jinja2 block dynamically sets variables for easier use #}
+                    {% set parts = detection.predicted_class.split('___') %}
+                    {% set crop_name = parts[0].replace('_', ' ') %}
+                    {% set disease_name = parts[1].replace('_', ' ') if parts|length > 1 and parts[1] else 'Healthy' %}
+                    {% set is_healthy = 'healthy' in disease_name.lower() %}
+
+                    <div class="history-item" data-filter-text="{{ crop_name }} {{ disease_name }}">
+                        <div class="history-image-container">
+                            <img src="{{ detection.image_url }}" alt="Image of {{ crop_name }} leaf">
+                            <span class="status-badge {{ 'healthy' if is_healthy else 'diseased' }}">
+                                {{ "Healthy" if is_healthy else "Diseased" }}
+                            </span>
+                        </div>
+                        <div class="history-info">
+                            <h3>{{ crop_name }}</h3>
+                            <p class="disease-name-dash">{{ disease_name }}</p>
+                            <div class="confidence-bar-container">
+                                <div class="confidence-bar" data-confidence="{{ detection.confidence }}"></div>
+                            </div>
+                            <p class="confidence-text">{{ "%.1f"|format(detection.confidence) }}% Confidence</p>
+                            <small class="timestamp">{{ detection.timestamp.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p id="no-results-message" class="no-history" style="display: none;">No detections match your filter.</p>
+            {% else %}
+                <div class="empty-state">
+                    <svg class="empty-state-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                    <h3>No History Found</h3>
+                    <p>You haven't analyzed any images yet. Your past detections will appear here.</p>
+                    <a href="{{ url_for('index') }}" class="btn">Analyze First Image</a>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        // Simple live filtering script
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterInput = document.getElementById('filter-input');
+            const historyGrid = document.getElementById('history-grid');
+            const noResultsMessage = document.getElementById('no-results-message');
+
+            if (filterInput) {
+                filterInput.addEventListener('keyup', function() {
+                    const filterText = this.value.toLowerCase();
+                    const items = historyGrid.querySelectorAll('.history-item');
+                    let visibleCount = 0;
+
+                    items.forEach(function(item) {
+                        const itemText = item.getAttribute('data-filter-text').toLowerCase();
+                        if (itemText.includes(filterText)) {
+                            item.style.display = '';
+                            visibleCount++;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    // Show or hide the "no results" message
+                    if (visibleCount === 0) {
+                        noResultsMessage.style.display = 'block';
+                    } else {
+                        noResultsMessage.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

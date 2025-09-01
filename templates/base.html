@@ -1,0 +1,188 @@
+import os
+import io
+import torch
+import torch.nn as nn
+import torchvision.transforms as transforms
+from torchvision.models import resnet50
+from PIL import Image
+from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
+import google.generativeai as genai
+import base64
+import uuid
+
+# Load environment variables from .env file
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_default_secret_key_for_development")
+
+# Configuration for file uploads
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# --- Model Loading ---
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model_path = 'models/plant_disease_model.pth'
+
+# Initialize model structure
+model = resnet50(weights=None) # Use weights=None when loading a state_dict
+model.fc = nn.Linear(in_features=2048, out_features=4)
+
+try:
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.to(device)
+    model.eval()
+    print("PyTorch model loaded successfully.")
+except FileNotFoundError:
+    print(f"ERROR: Model file not found at {model_path}. Please run the training script.")
+    exit()
+except Exception as e:
+    print(f"ERROR: An issue occurred while loading the model: {e}")
+    exit()
+
+
+transform_inference = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+CLASS_NAMES = ['apple_scab', 'black_rot', 'cedar_apple_rust', 'healthy']
+
+def predict_disease(image_bytes):
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        image_tensor = transform_inference(image).unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            outputs = model(image_tensor)
+            probabilities = torch.softmax(outputs, dim=1)
+            predicted_prob, predicted_idx = torch.max(probabilities, 1)
+
+        predicted_class = CLASS_NAMES[predicted_idx.item()]
+        confidence = predicted_prob.item() * 100
+        return predicted_class, confidence
+    except Exception as e:
+        print(f"ERROR during prediction: {e}")
+        return None, 0.0
+
+# --- Gemini API Setup ---
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY environment variable not set. Chatbot functionality will be disabled.")
+else:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-pro')
+        print("Gemini API configured successfully.")
+    except Exception as e:
+        print(f"ERROR: Failed to configure Gemini API: {e}")
+        gemini_model = None
+
+def get_chatbot_response(disease_name):
+    if disease_name == 'healthy':
+        return "The leaf appears to be healthy. No specific disease management is required. For optimal health, ensure consistent watering, appropriate fertilization, and regular monitoring for any signs of stress or pests."
+
+    if not gemini_model:
+        return "Chatbot is not available due to a configuration issue. Please check the server logs."
+
+    # A more structured and robust prompt
+    prompt = (f"You are an expert plant pathologist advising a farmer. Provide clear and actionable advice for the apple leaf disease: '{disease_name}'. "
+              "Structure your response with the following Markdown headings:\n\n"
+              "### **Description**\n"
+              "(Provide a brief, easy-to-understand description of the disease.)\n\n"
+              "### **Symptoms**\n"
+              "(List the key visual symptoms a farmer should look for.)\n\n"
+              "### **Management and Treatment**\n"
+              "(Provide a few practical, step-by-step management and treatment strategies. Include both chemical and organic options if possible.)\n\n"
+              "### **Prevention**\n"
+              "(List preventative measures to reduce the risk of future infections.)")
+    try:
+        response = gemini_model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        # **CRITICAL CHANGE**: Log the actual error to your terminal
+        print(f"ERROR: An error occurred while calling the Gemini API: {e}")
+        return "Sorry, an error occurred while fetching information about the disease. Please check the server logs for more details."
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request.'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected.'}), 400
+
+    if file and allowed_file(file.filename):
+        try:
+            filename = f"{uuid.uuid4()}_{file.filename}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            image_bytes = file.read()
+            # Save the file after reading its bytes
+            with open(filepath, 'wb') as f:
+                f.write(image_bytes)
+
+            predicted_class, confidence = predict_disease(image_bytes)
+            if predicted_class is None:
+                return jsonify({'error': 'Could not process the image for prediction.'}), 500
+            
+            chatbot_response = get_chatbot_response(predicted_class)
+            
+            return jsonify({
+                'prediction': predicted_class.replace('_', ' ').title(),
+                'confidence': f"{confidence:.2f}",
+                'image_url': os.path.join(app.config['UPLOAD_FOLDER'], filename),
+                'chatbot_response': chatbot_response
+            })
+        except Exception as e:
+            print(f"ERROR in /predict route: {e}")
+            return jsonify({'error': 'An internal server error occurred.'}), 500
+    else:
+        return jsonify({'error': 'File type not allowed.'}), 400
+
+# The capture route was missing from your summary, here it is fully implemented
+@app.route('/capture', methods=['POST'])
+def capture():
+    try:
+        data = request.get_json()
+        if 'image' not in data:
+            return jsonify({'error': 'No image data found in request.'}), 400
+
+        image_data_url = data['image']
+        header, encoded = image_data_url.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+
+        predicted_class, confidence = predict_disease(image_bytes)
+        if predicted_class is None:
+            return jsonify({'error': 'Could not process the captured image for prediction.'}), 500
+
+        filename = f"{uuid.uuid4()}_captured.png"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        with open(filepath, "wb") as f:
+            f.write(image_bytes)
+            
+        chatbot_response = get_chatbot_response(predicted_class)
+
+        return jsonify({
+            'prediction': predicted_class.replace('_', ' ').title(),
+            'confidence': f"{confidence:.2f}",
+            'image_url': os.path.join(app.config['UPLOAD_FOLDER'], filename),
+            'chatbot_response': chatbot_response
+        })
+    except Exception as e:
+        print(f"ERROR in /capture route: {e}")
+        return jsonify({'error': 'An internal server error occurred.'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True) # debug=True will auto-reload the server on changes

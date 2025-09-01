@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Disease Detector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Marked.js is for rendering the chatbot's markdown text -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <h1>🌱 Crop Disease & Health Monitor</h1>
+            <p>Your AI-powered assistant for healthier crops</p>
+            <p><a href="/dashboard" class="nav-link">View History Dashboard →</a></p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card interactive-area">
+            <h2>Get an Instant Diagnosis</h2>
+            <div class="options-container">
+                <!-- Upload Option -->
+                <div class="option-box">
+                    <form id="upload-form" method="POST" enctype="multipart/form-data">
+                        <label for="file-upload" class="file-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"></path></svg>
+                            <span>Click to Upload Image</span>
+                            <small id="file-name">or drag and drop</small>
+                        </label>
+                        <input type="file" id="file-upload" name="file" accept="image/*" hidden>
+                    </form>
+                </div>
+                <!-- (Camera option would go here) -->
+            </div>
+        </div>
+
+        <!-- Results Section (hidden by default) -->
+        <div id="results-section" class="card results-card" style="display: none;">
+            <div id="loader" class="loader"></div>
+            <div id="result-content" style="display: none;">
+                <h2>Analysis Complete</h2>
+                <div class="result-grid">
+                    <div class="image-container">
+                        <h3>Your Image</h3>
+                        <img id="result-image" src="" alt="Uploaded leaf image">
+                    </div>
+                    <div class="prediction-container">
+                        <h3>Diagnosis</h3>
+                        <p class="info-label">Detected Crop:</p>
+                        <p class="crop-name" id="predicted-crop"></p>
+                        <p class="info-label">Detected Disease:</p>
+                        <p class="disease-name" id="predicted-disease"></p>
+                        <p class="confidence-score">Confidence: <strong id="confidence-score"></strong></p>
+                    </div>
+                </div>
+                <div class="chatbot-container">
+                    <h3>&#x1F9EE; Expert Advice & Management</h3>
+                    <div id="chatbot-response"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <p>Built with Flask & PyTorch. Powered by Gemini AI.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
