@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Driven Crop Disease Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+            position: relative;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="60" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1"/></svg>');
+            opacity: 0.5;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Problem Statement Section */
+        .section {
+            padding: 5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .problem-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.2);
+        }
+
+        .problem-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .problem-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #f87171;
+        }
+
+        .problem-text {
+            color: #cbd5e1;
+            line-height: 1.8;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+
+        /* Architecture Section */
+        .architecture-section {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 5rem 2rem;
+        }
+
+        .architecture-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Embedded Architecture Styles */
+        .arch-viz {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 20px;
+            padding: 3rem;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .arch-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .arch-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .arch-subtitle {
+            color: #94a3b8;
+            font-size: 1.2rem;
+        }
+
+        .flow-container {
+            margin: 3rem 0;
+        }
+
+        .flow-step {
+            margin-bottom: 2rem;
+        }
+
+        .input-layer, .output-layer {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .layer-box {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 2rem 3rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .layer-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .layer-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .layer-desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        .arrow-down {
+            width: 3px;
+            height: 60px;
+            background: linear-gradient(180deg, #10b981 0%, #3b82f6 100%);
+            margin: 0 auto;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .model-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .model-card:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .model-card.blue { border-color: #3b82f6; }
+        .model-card.green { border-color: #10b981; }
+        .model-card.purple { border-color: #a78bfa; }
+        .model-card.red { border-color: #ef4444; }
+        .model-card.yellow { border-color: #fbbf24; }
+        .model-card.pink { border-color: #ec4899; }
+        .model-card.indigo { border-color: #6366f1; }
+
+        .model-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .model-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .model-accuracy {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+        }
+
+        .model-prediction {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(59, 130, 246, 0.2);
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .convergence-svg {
+            width: 100%;
+            height: 80px;
+            margin: 1rem 0;
+        }
+
+        .ensemble-methods {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .ensemble-title {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .methods-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .method-btn {
+            background: #334155;
+            border: none;
+            padding: 1.5rem 1rem;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .method-btn:hover {
+            background: #475569;
+        }
+
+        .method-btn.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .method-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .method-accuracy {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .method-details {
+            background: #0f172a;
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .method-detail-title {
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 0.75rem;
+        }
+
+        .method-description {
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+
+        .method-results {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .result-item span:first-child {
+            color: #94a3b8;
+        }
+
+        .result-item span:last-child {
+            font-weight: 600;
+        }
+
+        .result-accuracy {
+            color: #10b981 !important;
+        }
+
+        .result-prediction {
+            color: #3b82f6 !important;
+        }
+
+        .final-output {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .output-box {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            padding: 2rem 3rem;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(139, 92, 246, 0.4);
+        }
+
+        .output-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .output-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .output-result {
+            font-size: 1.3rem;
+            margin: 0.75rem 0;
+        }
+
+        .output-accuracy {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+
+        .output-improvement {
+            font-size: 0.85rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.9;
+        }
+
+        .performance-comparison {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .comparison-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .comparison-card {
+            background: #0f172a;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        .comparison-card.highlight {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+        }
+
+        .comparison-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .comparison-value.highlight {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .comparison-meta {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+
+        .methods-performance {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .method-perf-card {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .method-perf-name {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+
+        .method-perf-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        /* Team Section */
+        .team-section {
+            padding: 5rem 2rem;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .team-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .team-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 2px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .team-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 20px 50px rgba(56, 189, 248, 0.3);
+        }
+
+        .team-avatar {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 3rem;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .team-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+        }
+
+        .team-role {
+            color: #3b82f6;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .team-email {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .models-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .methods-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .methods-performance {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-container {
+                gap: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">🌱 AI-Driven Crop Disease Detection</h1>
+            <p class="hero-subtitle">Revolutionizing Agriculture with Deep Learning & Ensemble Intelligence</p>
+            <a href="#diagnosis" class="cta-button">Start Diagnosis →</a>
+        </div>
+    </section>
+
+    <!-- Problem Statement Section -->
+    <section class="section">
+        <h2 class="section-title">🚨 The Global Challenge</h2>
+        <p class="section-subtitle">Plant diseases threaten food security and farmer livelihoods worldwide</p>
+        
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-number">$220B</div>
+                <div class="stat-label">Annual Crop Loss</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">38</div>
+                <div class="stat-label">Disease Categories</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">99.92%</div>
+                <div class="stat-label">Detection Accuracy</div>
+            </div>
+        </div>
+
+        <div class="problem-grid">
+            <div class="problem-card">
+                <div class="problem-icon">⏰</div>
+                <div class="problem-title">Late Detection</div>
+                <div class="problem-text">
+                    By the time farmers receive accurate diagnoses, diseases often spread beyond control, resulting in massive crop losses.
+                </div>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">💰</div>
+                <div class="problem-title">High Costs</div>
+                <div class="problem-text">
+                    Traditional diagnostic methods require expensive laboratory tests and expert consultations that small-scale farmers cannot afford.
+                </div>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">🌍</div>
+                <div class="problem-title">Limited Access</div>
+                <div class="problem-text">
+                    Expert agronomists are scarce in rural and developing regions where agricultural employment is highest.
+                </div>
+            </div>
+            <div class="problem-card">
+                <div class="problem-icon">🔍</div>
+                <div class="problem-title">Subjective Analysis</div>
+                <div class="problem-text">
+                    Visual assessments by humans are inherently subjective and can vary significantly between different experts.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="architecture-section">
+        <div class="architecture-container">
+            <h2 class="section-title">🧠 Our Solution: Ensemble Architecture</h2>
+            <p class="section-subtitle">Combining 7 state-of-the-art deep learning models for superior accuracy</p>
+
+            <div class="arch-viz">
+                <!-- Input Layer -->
+                <div class="input-layer">
+                    <div class="layer-box">
+                        <div class="layer-icon">📸</div>
+                        <div class="layer-title">Input Image</div>
+                        <div class="layer-desc">Plant Leaf Photo</div>
+                    </div>
+                </div>
+
+                <div class="arrow-down"></div>
+
+                <!-- Individual Models -->
+                <div class="models-grid">
+                    <div class="model-card blue">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">MobileNetV2</div>
+                        <div class="model-accuracy">99.86%</div>
+                        <div class="model-prediction">Disease A<br>95%</div>
+                    </div>
+                    <div class="model-card green">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">MobileNetV3-L</div>
+                        <div class="model-accuracy">99.90%</div>
+                        <div class="model-prediction">Disease A<br>97%</div>
+                    </div>
+                    <div class="model-card purple">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">EfficientNet-B0</div>
+                        <div class="model-accuracy">99.88%</div>
+                        <div class="model-prediction">Disease A<br>94%</div>
+                    </div>
+                    <div class="model-card red">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">EfficientNetV2-S</div>
+                        <div class="model-accuracy">99.91%</div>
+                        <div class="model-prediction">Disease B<br>89%</div>
+                    </div>
+                    <div class="model-card yellow">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">ResNet18</div>
+                        <div class="model-accuracy">99.71%</div>
+                        <div class="model-prediction">Disease A<br>92%</div>
+                    </div>
+                    <div class="model-card pink">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">ResNet50</div>
+                        <div class="model-accuracy">99.12%</div>
+                        <div class="model-prediction">Disease A<br>88%</div>
+                    </div>
+                    <div class="model-card indigo">
+                        <div class="model-icon">🧠</div>
+                        <div class="model-name">DenseNet121</div>
+                        <div class="model-accuracy">99.87%</div>
+                        <div class="model-prediction">Disease A<br>96%</div>
+                    </div>
+                </div>
+
+                <!-- Convergence Lines -->
+                <svg class="convergence-svg" viewBox="0 0 700 60">
+                    <path d="M 50 0 Q 350 30 350 60" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.6"/>
+                    <path d="M 150 0 Q 350 30 350 60" fill="none" stroke="#10b981" stroke-width="2" opacity="0.6"/>
+                    <path d="M 250 0 Q 350 30 350 60" fill="none" stroke="#a78bfa" stroke-width="2" opacity="0.6"/>
+                    <path d="M 350 0 Q 350 30 350 60" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.6"/>
+                    <path d="M 450 0 Q 350 30 350 60" fill="none" stroke="#fbbf24" stroke-width="2" opacity="0.6"/>
+                    <path d="M 550 0 Q 350 30 350 60" fill="none" stroke="#ec4899" stroke-width="2" opacity="0.6"/>
+                    <path d="M 650 0 Q 350 30 350 60" fill="none" stroke="#6366f1" stroke-width="2" opacity="0.6"/>
+                </svg>
+
+                <!-- Ensemble Methods -->
+                <div class="ensemble-methods">
+                    <h3 class="ensemble-title">
+                        <span>🔀</span>
+                        <span>Ensemble Fusion Layer</span>
+                    </h3>
+                    
+                    <div class="methods-grid">
+                        <button class="method-btn active" data-method="majority">
+                            <div class="method-name">Majority Voting</div>
+                            <div class="method-accuracy">99.92%</div>
+                        </button>
+                        <button class="method-btn" data-method="weighted">
+                            <div class="method-name">Weighted Voting</div>
+                            <div class="method-accuracy">99.92%</div>
+                        </button>
+                        <button class="method-btn" data-method="average">
+                            <div class="method-name">Average Probability</div>
+                            <div class="method-accuracy">99.92%</div>
+                        </button>
+                        <button class="method-btn" data-method="max">
+                            <div class="method-name">Max Probability</div>
+                            <div class="method-accuracy">99.85%</div>
+                        </button>
+                        <button class="method-btn" data-method="product">
+                            <div class="method-name">Product of Experts</div>
+                            <div class="method-accuracy">99.91%</div>
+                        </button>
+                        <button class="method-btn" data-method="confidence">
+                            <div class="method-name">Confidence Weighted</div>
+                            <div class="method-accuracy">99.92%</div>
+                        </button>
+                    </div>
+
+                    <div class="method-details" id="method-details">
+                        <div class="method-detail-title">Majority Voting</div>
+                        <div class="method-description">Each model votes for a class; highest vote count wins</div>
+                        <div class="method-results">
+                            <div class="result-item">
+                                <span>Accuracy: </span>
+                                <span class="result-accuracy">99.92%</span>
+                            </div>
+                            <div class="result-item">
+                                <span>Result: </span>
+                                <span class="result-prediction">Disease A (6 votes)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow-down"></div>
+
+                <!-- Final Output -->
+                <div class="final-output">
+                    <div class="output-box">
+                        <div class="output-icon">✅</div>
+                        <div class="output-title">Final Prediction</div>
+                        <div class="output-result" id="output-result">Disease A (6 votes)</div>
+                        <div class="output-accuracy">Ensemble Accuracy: <strong id="output-accuracy">99.92%</strong></div>
+                        <div class="output-improvement">11% error reduction vs best individual model</div>
+                    </div>
+                </div>
+
+                <!-- Performance Comparison -->
+                <div class="performance-comparison">
+                    <h3 class="comparison-title">Performance Comparison</h3>
+                    <div class="comparison-grid">
+                        <div class="comparison-card">
+                            <div class="comparison-label">Best Individual Model</div>
+                            <div class="comparison-value">99.91%</div>
+                            <div class="comparison-meta">EfficientNetV2-S</div>
+                        </div>
+                        <div class="comparison-card highlight">
+                            <div class="comparison-label">Top Ensemble Methods</div>
+                            <div class="comparison-value highlight">99.92%</div>
+                            <div class="comparison-meta">4 methods achieved this</div>
+                        </div>
+                    </div>
+
+                    <div class="methods-performance">
+                        <div class="method-perf-card">
+                            <div class="method-perf-name">Majority</div>
+                            <div class="method-perf-value">99.92%</div>
+                        </div>
+                        <div class="method-perf-card">
+                            <div class="method-perf-name">Weighted</div>
+                            <div class="method-perf-value">99.92%</div>
+                        </div>
+                        <div class="method-perf-card">
+                            <div class="method-perf-name">Average</div>
+                            <div class="method-perf-value">99.92%</div>
+                        </div>
+                        <div class="method-perf-card">
+                            <div class="method-perf-name">Conf-Wtd</div>
+                            <div class="method-perf-value">99.92%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section">
+        <div class="team-container">
+            <h2 class="section-title">👥 Meet Our Team</h2>
+            <p class="section-subtitle">Department of Computer Science & Information Science Engineering, Presidency University</p>
+            
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-avatar">👨‍💻</div>
+                    <div class="team-name">Varun M J</div>
+                    <div class="team-role">Lead Developer</div>
+                    <div class="team-email">nitinchitrakar20@gmail.com</div>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">👨‍💻</div>
+                    <div class="team-name">Nitin Chitrakar</div>
+                    <div class="team-role">ML Engineer</div>
+                    <div class="team-email">nitinchitrakar20@gmail.com</div>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">👨‍💻</div>
+                    <div class="team-name">Nischal H Ameen</div>
+                    <div class="team-role">Backend Developer</div>
+                    <div class="team-email">nischalh777@gmail.com</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Diagnosis Section (Original Content) -->
+    <section id="diagnosis" class="section" style="background: rgba(15, 23, 42, 0.8);">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h2 class="section-title">🔬 Get Instant Diagnosis</h2>
+            <p class="section-subtitle">Upload a photo or use your camera to detect crop diseases in real-time</p>
+            
+            <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 20px; padding: 3rem; backdrop-filter: blur(10px);">
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 2rem; align-items: center;">
+                    <!-- Upload Option -->
+                    <div style="text-align: center;">
+                        <form id="upload-form">
+                            <label for="file-upload" style="display: block; padding: 3rem 2rem; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 15px; cursor: pointer; transition: all 0.3s ease;">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 60px; height: 60px; margin: 0 auto 1rem; display: block;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"></path></svg>
+                                <span style="display: block; font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;">Click to Upload Image</span>
+                                <small id="file-name" style="display: block; opacity: 0.8;">or drag and drop</small>
+                            </label>
+                            <input type="file" id="file-upload" name="file" accept="image/*" hidden>
+                        </form>
+                    </div>
+
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #94a3b8;">OR</div>
+
+                    <!-- Camera Option -->
+                    <div style="text-align: center;">
+                        <button id="start-camera-btn" style="display: block; width: 100%; padding: 3rem 2rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 15px; color: white; cursor: pointer; transition: all 0.3s ease;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 60px; height: 60px; margin: 0 auto 1rem; display: block;"><path d="M12 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0-10c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zM20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"></path></svg>
+                            <span style="display: block; font-size: 1.2rem; font-weight: 600;">Use Your Camera</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Modal -->
+            <div id="camera-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.9); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: #1e293b; border-radius: 20px; padding: 2rem; max-width: 600px; width: 90%; position: relative;">
+                    <span id="close-modal" style="position: absolute; top: 1rem; right: 1rem; font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+                    <h3 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.5rem;">Position the Leaf in the Frame</h3>
+                    <video id="webcam-stream" autoplay playsinline style="width: 100%; border-radius: 10px; margin-bottom: 1rem;"></video>
+                    <button id="capture-photo-btn" style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border: none; border-radius: 10px; color: white; font-size: 1.1rem; font-weight: 600; cursor: pointer;">Capture Photo</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" style="display: none; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 20px; padding: 3rem; backdrop-filter: blur(10px); margin-top: 2rem;">
+                <div id="loader" style="display: none; text-align: center; padding: 3rem;">
+                    <div style="width: 60px; height: 60px; border: 4px solid rgba(59, 130, 246, 0.3); border-top: 4px solid #3b82f6; border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 1rem; color: #94a3b8;">Analyzing your image...</p>
+                </div>
+                <div id="result-content" style="display: none;">
+                    <h2 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">✓ Analysis Complete</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                        <div>
+                            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: #3b82f6;">Your Image</h3>
+                            <img id="result-image" src="" alt="Uploaded leaf" style="width: 100%; border-radius: 10px; border: 2px solid rgba(56, 189, 248, 0.3);">
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: #3b82f6;">Diagnosis</h3>
+                            <p style="color: #94a3b8; margin-bottom: 0.5rem;">Detected Crop:</p>
+                            <p id="predicted-crop" style="font-size: 1.5rem; font-weight: 600; color: #10b981; margin-bottom: 1rem;"></p>
+                            <p style="color: #94a3b8; margin-bottom: 0.5rem;">Detected Disease:</p>
+                            <p id="predicted-disease" style="font-size: 1.5rem; font-weight: 600; color: #ef4444; margin-bottom: 1rem;"></p>
+                            <p style="color: #94a3b8;">Confidence: <strong id="confidence-score" style="color: #10b981; font-size: 1.2rem;"></strong></p>
+                        </div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.8); border-radius: 15px; padding: 2rem;">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">🧪 Expert Advice & Management</h3>
+                        <div id="chatbot-response" style="color: #cbd5e1; line-height: 1.8;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="text-align: center; padding: 3rem 2rem; background: rgba(15, 23, 42, 0.9); color: #94a3b8;">
+        <p style="font-size: 1.1rem;">Built with Flask & PyTorch • Powered by Gemini AI</p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem;">© 2025 Presidency University, Bengaluru</p>
+    </footer>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        // Ensemble method data
+        const methodData = {
+            majority: {
+                title: 'Majority Voting',
+                description: 'Each model votes for a class; highest vote count wins',
+                accuracy: '99.92%',
+                result: 'Disease A (6 votes)'
+            },
+            weighted: {
+                title: 'Weighted Voting',
+                description: 'Votes weighted by model validation accuracy',
+                accuracy: '99.92%',
+                result: 'Disease A (weighted)'
+            },
+            average: {
+                title: 'Average Probability',
+                description: 'Average probability distributions across models',
+                accuracy: '99.92%',
+                result: 'Disease A (avg: 0.94)'
+            },
+            max: {
+                title: 'Max Probability',
+                description: 'Select prediction with highest confidence',
+                accuracy: '99.85%',
+                result: 'Disease A (conf: 0.97)'
+            },
+            product: {
+                title: 'Product of Experts',
+                description: 'Multiply probability distributions element-wise',
+                accuracy: '99.91%',
+                result: 'Disease A (product)'
+            },
+            confidence: {
+                title: 'Confidence Weighted',
+                description: 'Weight by per-sample prediction confidence',
+                accuracy: '99.92%',
+                result: 'Disease A (conf-wtd)'
+            }
+        };
+
+        // Handle ensemble method selection
+        document.querySelectorAll('.method-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const method = this.dataset.method;
+                const data = methodData[method];
+                
+                document.querySelector('.method-detail-title').textContent = data.title;
+                document.querySelector('.method-description').textContent = data.description;
+                document.querySelector('.result-accuracy').textContent = data.accuracy;
+                document.querySelector('.result-prediction').textContent = data.result;
+                document.getElementById('output-result').textContent = data.result;
+                document.getElementById('output-accuracy').textContent = data.accuracy;
+            });
+        });
+
+        // Camera and upload functionality (placeholder - integrate with your existing script.js)
+        const cameraModal = document.getElementById('camera-modal');
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const closeModal = document.getElementById('close-modal');
+        const captureBtn = document.getElementById('capture-photo-btn');
+        const fileUpload = document.getElementById('file-upload');
+        const fileName = document.getElementById('file-name');
+
+        startCameraBtn.addEventListener('click', () => {
+            cameraModal.style.display = 'flex';
+            // Add your camera initialization code here
+        });
+
+        closeModal.addEventListener('click', () => {
+            cameraModal.style.display = 'none';
+            // Stop camera stream
+        });
+
+        fileUpload.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileName.textContent = e.target.files[0].name;
+                // Add your upload handling code here
+            }
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

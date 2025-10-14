@@ -265,11 +265,35 @@ def process_and_save_prediction(image_bytes, original_filename="captured.png"):
 @app.route('/')
 def index():
     return render_template('index.html')
+@app.route('/architecture')
+def architecture():
+    return render_template('architecture.html')
 
 @app.route('/dashboard')
 def dashboard():
     detections = Detection.query.order_by(Detection.timestamp.desc()).all()
     return render_template('dashboard.html', detections=detections)
+
+@app.route('/api/detections')
+def get_detections():
+    """
+    API endpoint to fetch all detections as JSON
+    Used by React dashboard for dynamic data loading
+    """
+    try:
+        detections = Detection.query.order_by(Detection.timestamp.desc()).all()
+        detections_data = [{
+            'id': d.id,
+            'image_url': d.image_url,
+            'predicted_class': d.predicted_class,
+            'confidence': d.confidence,
+            'timestamp': d.timestamp.isoformat()
+        } for d in detections]
+        
+        return jsonify(detections_data), 200
+    except Exception as e:
+        print(f"🔴 ERROR fetching detections: {e}")
+        return jsonify({'error': 'Failed to fetch detections'}), 500
 
 @app.route('/predict', methods=['POST'])
 def predict():

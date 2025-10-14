@@ -15,11 +15,18 @@
         <div class="container">
             <h1>🌱 Crop Disease & Health Monitor</h1>
             <p>Your AI-powered assistant for healthier crops</p>
-            <p><a href="{{ url_for('dashboard') }}" class="nav-link">View History Dashboard →</a></p>
+            <p><a href="{{ url_for('dashboard') }}" class="nav-link">View History Dashboard →</a>
+            <a href="{{ url_for('architecture') }}" class="nav-link">View Architecture →</a></p>
         </div>
     </header>
 
     <main class="container">
+            <div style="text-align: center; margin-bottom: 2rem;">
+        <a href="{{ url_for('architecture') }}" 
+           style="display: inline-block; padding: 1rem 2rem; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600;">
+            🧠 View Our Ensemble Architecture
+        </a>
+    </div>
         <div class="card interactive-area">
             <h2>Get an Instant Diagnosis</h2>
             <div class="options-container">

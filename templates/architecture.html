@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ensemble Architecture Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Removed lucide (not React components in UMD) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('index') }}" class="back-button">← Back to Diagnosis</a>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="env,react">
+        const { useState } = React;
+        // Minimal inline SVG React components to replace icons
+        const IconBase = ({ children, className }) => (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            {children}
+          </svg>
+        );
+
+        const Brain = ({ className }) => (
+          <IconBase className={className}>
+            <path d="M8 6a3 3 0 0 0-3 3v1a3 3 0 0 0 0 6h3"/>
+            <path d="M16 6a3 3 0 0 1 3 3v1a3 3 0 0 1 0 6h-3"/>
+            <path d="M8 6V4a2 2 0 1 1 4 0v10"/>
+            <path d="M16 6V4a2 2 0 1 0-4 0"/>
+          </IconBase>
+        );
+
+        const Layers = ({ className }) => (
+          <IconBase className={className}>
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 12 12 17 22 12"/>
+            <polyline points="2 17 12 22 22 17"/>
+          </IconBase>
+        );
+
+        const GitMerge = ({ className }) => (
+          <IconBase className={className}>
+            <circle cx="18" cy="18" r="3"/>
+            <circle cx="6" cy="6" r="3"/>
+            <path d="M6 9v3a6 6 0 0 0 6 6h3"/>
+          </IconBase>
+        );
+
+        const CheckCircle = ({ className }) => (
+          <IconBase className={className}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </IconBase>
+        );
+
+        const TrendingUp = ({ className }) => (
+          <IconBase className={className}>
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </IconBase>
+        );
+
+        function EnsembleVisualization() {
+          const [selectedMethod, setSelectedMethod] = useState('majority');
+          
+          const models = [
+            { name: 'MobileNetV2', accuracy: 99.86, color: 'bg-blue-500', prediction: 'Disease A', confidence: 0.95 },
+            { name: 'MobileNetV3-L', accuracy: 99.90, color: 'bg-green-500', prediction: 'Disease A', confidence: 0.97 },
+            { name: 'EfficientNet-B0', accuracy: 99.88, color: 'bg-purple-500', prediction: 'Disease A', confidence: 0.94 },
+            { name: 'EfficientNetV2-S', accuracy: 99.91, color: 'bg-red-500', prediction: 'Disease B', confidence: 0.89 },
+            { name: 'ResNet18', accuracy: 99.71, color: 'bg-yellow-500', prediction: 'Disease A', confidence: 0.92 },
+            { name: 'ResNet50', accuracy: 99.12, color: 'bg-pink-500', prediction: 'Disease A', confidence: 0.88 },
+            { name: 'DenseNet121', accuracy: 99.87, color: 'bg-indigo-500', prediction: 'Disease A', confidence: 0.96 }
+          ];
+
+          const ensembleMethods = {
+            majority: {
+              name: 'Majority Voting',
+              description: 'Each model votes for a class; highest vote count wins',
+              accuracy: 99.92,
+              result: 'Disease A (6 votes)'
+            },
+            weighted: {
+              name: 'Weighted Voting',
+              description: 'Votes weighted by model validation accuracy',
+              accuracy: 99.92,
+              result: 'Disease A (weighted)'
+            },
+            average: {
+              name: 'Average Probability',
+              description: 'Average probability distributions across models',
+              accuracy: 99.92,
+              result: 'Disease A (avg: 0.94)'
+            },
+            max: {
+              name: 'Max Probability',
+              description: 'Select prediction with highest confidence',
+              accuracy: 99.85,
+              result: 'Disease A (conf: 0.97)'
+            },
+            product: {
+              name: 'Product of Experts',
+              description: 'Multiply probability distributions element-wise',
+              accuracy: 99.91,
+              result: 'Disease A (product)'
+            },
+            confidence: {
+              name: 'Confidence Weighted',
+              description: 'Weight by per-sample prediction confidence',
+              accuracy: 99.92,
+              result: 'Disease A (conf-wtd)'
+            }
+          };
+
+          const currentMethod = ensembleMethods[selectedMethod];
+
+          return (
+            <div className="w-full min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8">
+              <div className="max-w-7xl mx-auto pt-16">
+                <div className="text-center mb-8">
+                  <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Ensemble Architecture for Plant Disease Detection
+                  </h1>
+                  <p className="text-gray-400 text-lg">
+                    Combining 7 Deep Learning Models • Achieving 99.92% Accuracy
+                  </p>
+                </div>
+
+                <div className="mb-8">
+                  {/* Input Layer */}
+                  <div className="flex justify-center mb-6">
+                    <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-lg p-6 shadow-lg">
+                      <div className="text-center">
+                        <Layers className="w-12 h-12 mx-auto mb-2" />
+                        <div className="font-bold text-lg">Input Image</div>
+                        <div className="text-sm text-green-100">Plant Leaf Photo</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center mb-6">
+                    <div className="w-1 h-12 bg-gradient-to-b from-green-500 to-blue-500"></div>
+                  </div>
+
+                  {/* Models Grid */}
+                  <div className="grid grid-cols-7 gap-3 mb-6">
+                    {models.map((model, idx) => (
+                      <div key={idx} className="flex flex-col items-center">
+                        <div className={`${model.color} rounded-lg p-4 shadow-lg transform transition-all hover:scale-105 hover:shadow-xl w-full`}>
+                          <Brain className="w-8 h-8 mx-auto mb-2" />
+                          <div className="text-xs font-bold text-center mb-1">{model.name}</div>
+                          <div className="text-xs text-center opacity-90">{model.accuracy}%</div>
+                          <div className="mt-2 pt-2 border-t border-white/20">
+                            <div className="text-xs text-center font-semibold">{model.prediction}</div>
+                            <div className="text-xs text-center opacity-75">{(model.confidence * 100).toFixed(0)}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Convergence Lines */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative w-full h-16">
+                      <svg className="w-full h-full" viewBox="0 0 700 60">
+                        {models.map((_, idx) => {
+                          const startX = (idx * 100) + 50;
+                          return (
+                            <path
+                              key={idx}
+                              d={`M ${startX} 0 Q 350 30 350 60`}
+                              fill="none"
+                              stroke="url(#gradient)"
+                              strokeWidth="2"
+                              opacity="0.6"
+                            />
+                          );
+                        })}
+                        <defs>
+                          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#3b82f6" />
+                            <stop offset="100%" stopColor="#8b5cf6" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Ensemble Methods */}
+                  <div className="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <GitMerge className="w-6 h-6 mr-2 text-purple-400" />
+                      <h2 className="text-2xl font-bold">Ensemble Fusion Layer</h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      {Object.entries(ensembleMethods).map(([key, method]) => (
+                        <button
+                          key={key}
+                          onClick={() => setSelectedMethod(key)}
+                          className={`p-4 rounded-lg transition-all ${
+                            selectedMethod === key
+                              ? 'bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg transform scale-105'
+                              : 'bg-gray-700 hover:bg-gray-600'
+                          }`}
+                        >
+                          <div className="text-sm font-bold text-center">{method.name}</div>
+                          <div className="text-xs text-center mt-1 text-gray-300">{method.accuracy}%</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="bg-gray-900 rounded-lg p-4">
+                      <div className="font-semibold mb-2 text-purple-300">{currentMethod.name}</div>
+                      <div className="text-sm text-gray-400 mb-3">{currentMethod.description}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="text-gray-400">Accuracy: </span>
+                          <span className="font-bold text-green-400">{currentMethod.accuracy}%</span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-gray-400">Result: </span>
+                          <span className="font-bold text-blue-400">{currentMethod.result}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center mb-6">
+                    <div className="w-1 h-12 bg-gradient-to-b from-purple-500 to-green-500"></div>
+                  </div>
+
+                  {/* Final Output */}
+                  <div className="flex justify-center">
+                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 shadow-2xl max-w-md w-full">
+                      <div className="text-center">
+                        <CheckCircle className="w-12 h-12 mx-auto mb-3" />
+                        <div className="font-bold text-2xl mb-2">Final Prediction</div>
+                        <div className="text-xl mb-2">{currentMethod.result}</div>
+                        <div className="text-sm text-purple-100">
+                          Ensemble Accuracy: {currentMethod.accuracy}%
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <div className="text-xs text-purple-100">
+                            11% error reduction vs best individual model
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Comparison */}
+                <div className="bg-gray-800 rounded-lg p-6 shadow-xl mt-8">
+                  <h3 className="text-xl font-bold mb-4 text-center">Performance Comparison</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-900 rounded-lg p-4">
+                      <div className="text-sm text-gray-400 mb-2">Best Individual Model</div>
+                      <div className="text-3xl font-bold text-blue-400">99.91%</div>
+                      <div className="text-xs text-gray-500 mt-1">EfficientNetV2-S</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-lg p-4">
+                      <div className="text-sm text-purple-200 mb-2">Top Ensemble Methods</div>
+                      <div className="text-3xl font-bold text-green-400">99.92%</div>
+                      <div className="text-xs text-purple-200 mt-1">4 methods achieved this</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 grid grid-cols-4 gap-2">
+                    {['Majority', 'Weighted', 'Average', 'Conf-Wtd'].map((name) => (
+                      <div key={name} className="bg-gray-900 rounded p-3 text-center">
+                        <div className="text-xs text-gray-400">{name}</div>
+                        <div className="text-lg font-bold text-green-400">99.92%</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Key Insights */}
+                <div className="mt-8 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-lg p-6 border border-blue-500/30 mb-8">
+                  <h3 className="text-xl font-bold mb-4 flex items-center">
+                    <TrendingUp className="w-6 h-6 mr-2 text-blue-400" />
+                    Key Insights
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-start">
+                      <div className="w-2 h-2 bg-green-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                      <div>
+                        <span className="font-semibold">State-of-the-art: </span>
+                        <span className="text-gray-300">Highest accuracy on PlantVillage-38 dataset</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                      <div>
+                        <span className="font-semibold">Error Reduction: </span>
+                        <span className="text-gray-300">11% reduction compared to best single model</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                      <div>
+                        <span className="font-semibold">Robustness: </span>
+                        <span className="text-gray-300">Combines diverse architectural biases</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="w-2 h-2 bg-pink-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                      <div>
+                        <span className="font-semibold">Statistical: </span>
+                        <span className="text-gray-300">Improvements confirmed significant (p &lt; 0.05)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Render the component
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(EnsembleVisualization, null));
+    </script>
+</body>
+</html>
