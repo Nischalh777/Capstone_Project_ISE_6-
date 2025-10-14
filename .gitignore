@@ -22,4 +22,5 @@ datasets/
 # Uploaded images
 static/uploads/
 
-docs/
+docs/models/*.pth
+models/*.json
