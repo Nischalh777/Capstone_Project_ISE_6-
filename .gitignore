@@ -21,3 +21,5 @@ kaggle_dataset/
 datasets/
 # Uploaded images
 static/uploads/
+
+docs/
